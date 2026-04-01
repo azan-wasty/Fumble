@@ -1,0 +1,99 @@
+const { sql, poolPromise } = require('../config/db');
+
+// GET /api/courts  — optional ?status=confirmed
+const getAllBookings = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const { status } = req.query;
+        let query = `
+            SELECT cr.booking_id, u.full_name, u.roll_number,
+                   v.venue_name, s.sport_name,
+                   cr.booking_date, cr.start_time, cr.end_time, cr.status, cr.created_at
+            FROM Court_Registrations cr
+            JOIN Users  u ON cr.user_id  = u.user_id
+            JOIN Venues v ON cr.venue_id = v.venue_id
+            JOIN Sports s ON v.sport_id  = s.sport_id`;
+        if (status) query += ` WHERE cr.status = '${status}'`;
+        query += ' ORDER BY cr.booking_date, cr.start_time';
+        const result = await pool.request().query(query);
+        res.json(result.recordset);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// GET /api/courts/:id
+const getBookingById = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('id', sql.Int, req.params.id)
+            .query(`SELECT cr.*, u.full_name, v.venue_name
+                    FROM Court_Registrations cr
+                    JOIN Users  u ON cr.user_id  = u.user_id
+                    JOIN Venues v ON cr.venue_id = v.venue_id
+                    WHERE cr.booking_id = @id`);
+        if (!result.recordset.length) return res.status(404).json({ error: 'Booking not found' });
+        res.json(result.recordset[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// POST /api/courts
+const createBooking = async (req, res) => {
+    const { user_id, venue_id, booking_date, start_time, end_time } = req.body;
+    if (!user_id || !venue_id || !booking_date || !start_time || !end_time)
+        return res.status(400).json({ error: 'user_id, venue_id, booking_date, start_time, end_time required' });
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('user_id', sql.Int, user_id)
+            .input('venue_id', sql.Int, venue_id)
+            .input('booking_date', sql.Date, booking_date)
+            .input('start_time', sql.VarChar, start_time)
+            .input('end_time', sql.VarChar, end_time)
+            .query(`INSERT INTO Court_Registrations (user_id, venue_id, booking_date, start_time, end_time)
+                    OUTPUT INSERTED.*
+                    VALUES (@user_id, @venue_id, @booking_date, @start_time, @end_time)`);
+        res.status(201).json(result.recordset[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// PATCH /api/courts/:id/status
+const updateBookingStatus = async (req, res) => {
+    const { status } = req.body;
+    const allowed = ['pending', 'confirmed', 'cancelled'];
+    if (!allowed.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('id', sql.Int, req.params.id)
+            .input('status', sql.VarChar, status)
+            .query(`UPDATE Court_Registrations SET status = @status
+                    OUTPUT INSERTED.*
+                    WHERE booking_id = @id`);
+        if (!result.recordset.length) return res.status(404).json({ error: 'Booking not found' });
+        res.json(result.recordset[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// DELETE /api/courts/:id
+const deleteBooking = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('id', sql.Int, req.params.id)
+            .query('DELETE FROM Court_Registrations OUTPUT DELETED.booking_id WHERE booking_id = @id');
+        if (!result.recordset.length) return res.status(404).json({ error: 'Booking not found' });
+        res.json({ message: 'Booking deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+module.exports = { getAllBookings, getBookingById, createBooking, updateBookingStatus, deleteBooking };
