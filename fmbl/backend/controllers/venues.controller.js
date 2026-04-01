@@ -1,78 +1,79 @@
 const { sql, poolPromise } = require('../config/db');
 
-const getAllSports = async (req, res) => {
+const getAllVenues = async (req, res) => {
     try {
         const pool = await poolPromise;
-        const result = await pool.request().query('SELECT * FROM Sports');
+        const result = await pool.request().query(`
+            SELECT v.*, s.sport_name FROM Venues v
+            JOIN Sports s ON v.sport_id = s.sport_id`);
         res.json(result.recordset);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-const getSportById = async (req, res) => {
+const getVenueById = async (req, res) => {
     try {
         const pool = await poolPromise;
         const result = await pool.request()
             .input('id', sql.Int, req.params.id)
-            .query('SELECT * FROM Sports WHERE sport_id = @id');
-        if (!result.recordset.length) return res.status(404).json({ error: 'Sport not found' });
+            .query(`SELECT v.*, s.sport_name FROM Venues v
+                    JOIN Sports s ON v.sport_id = s.sport_id
+                    WHERE v.venue_id = @id`);
+        if (!result.recordset.length) return res.status(404).json({ error: 'Venue not found' });
         res.json(result.recordset[0]);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-const createSport = async (req, res) => {
-    const { sport_name, max_team_size, min_team_size } = req.body;
-    if (!sport_name || !max_team_size || !min_team_size)
-        return res.status(400).json({ error: 'sport_name, max_team_size, and min_team_size are required' });
+const createVenue = async (req, res) => {
+    const { venue_name, sport_id, location, capacity } = req.body;
+    if (!venue_name || !sport_id) return res.status(400).json({ error: 'venue_name and sport_id are required' });
     try {
         const pool = await poolPromise;
         const result = await pool.request()
-            .input('sport_name', sql.VarChar, sport_name)
-            .input('max_team_size', sql.Int, max_team_size)
-            .input('min_team_size', sql.Int, min_team_size)
-            .query(`INSERT INTO Sports (sport_name, max_team_size, min_team_size)
+            .input('venue_name', sql.VarChar, venue_name)
+            .input('sport_id', sql.Int, sport_id)
+            .input('location', sql.VarChar, location)
+            .input('capacity', sql.Int, capacity)
+            .query(`INSERT INTO Venues (venue_name, sport_id, location, capacity)
                     OUTPUT INSERTED.*
-                    VALUES (@sport_name, @max_team_size, @min_team_size)`);
+                    VALUES (@venue_name, @sport_id, @location, @capacity)`);
         res.status(201).json(result.recordset[0]);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-const updateSport = async (req, res) => {
-    const { max_team_size, min_team_size } = req.body;
+const updateVenueAvailability = async (req, res) => {
+    const { is_available } = req.body;
     try {
         const pool = await poolPromise;
         const result = await pool.request()
             .input('id', sql.Int, req.params.id)
-            .input('max_team_size', sql.Int, max_team_size)
-            .input('min_team_size', sql.Int, min_team_size)
-            .query(`UPDATE Sports SET
-                        max_team_size = ISNULL(@max_team_size, max_team_size),
-                        min_team_size = ISNULL(@min_team_size, min_team_size)
+            .input('is_available', sql.Bit, is_available)
+            .query(`UPDATE Venues SET is_available = @is_available
                     OUTPUT INSERTED.*
-                    WHERE sport_id = @id`);
-        if (!result.recordset.length) return res.status(404).json({ error: 'Sport not found' });
+                    WHERE venue_id = @id`);
+        if (!result.recordset.length) return res.status(404).json({ error: 'Venue not found' });
         res.json(result.recordset[0]);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-const deleteSport = async (req, res) => {
+const deleteVenue = async (req, res) => {
     try {
         const pool = await poolPromise;
         const result = await pool.request()
             .input('id', sql.Int, req.params.id)
-            .query('DELETE FROM Sports OUTPUT DELETED.sport_id WHERE sport_id = @id');
-        if (!result.recordset.length) return res.status(404).json({ error: 'Sport not found' });
-        res.json({ message: 'Sport deleted' });
+            .query('DELETE FROM Venues OUTPUT DELETED.venue_id WHERE venue_id = @id');
+        if (!result.recordset.length) return res.status(404).json({ error: 'Venue not found' });
+        res.json({ message: 'Venue deleted' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-module.exports = { getAllSports, getSportById, createSport, updateSport, deleteSport };
+module.exports = { getAllVenues, getVenueById, createVenue, updateVenueAvailability, deleteVenue };
