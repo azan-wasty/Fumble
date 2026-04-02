@@ -21,5 +21,8 @@ app.use('/api/players', require('./routes/players'));
 
 app.get('/', (req, res) => res.json({ message: 'Fumble API running' }));
 
+// Global error handler — must be last
+app.use(require('./middleware/error.middleware'));
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

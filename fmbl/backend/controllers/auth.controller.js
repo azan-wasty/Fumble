@@ -19,21 +19,18 @@ const registerUser = async (req, res) => {
     try {
         const pool = await poolPromise;
 
-        // Check if user exists
         const userExists = await pool.request()
             .input('roll_number', sql.VarChar, roll_number)
             .input('email', sql.VarChar, email)
-            .query('SELECT * FROM Users WHERE roll_number = @roll_number OR email = @email');
+            .query('SELECT user_id FROM Users WHERE roll_number = @roll_number OR email = @email');
 
         if (userExists.recordset.length > 0) {
             return res.status(400).json({ error: 'User with this roll number or email already exists' });
         }
 
-        // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Create user
         const result = await pool.request()
             .input('roll_number', sql.VarChar, roll_number)
             .input('full_name', sql.VarChar, full_name)
@@ -71,10 +68,9 @@ const loginUser = async (req, res) => {
     try {
         const pool = await poolPromise;
 
-        // Find user
         const result = await pool.request()
             .input('roll_number', sql.VarChar, roll_number)
-            .query('SELECT * FROM Users WHERE roll_number = @roll_number');
+            .query('SELECT user_id, roll_number, full_name, email, role, password_hash FROM Users WHERE roll_number = @roll_number');
 
         if (result.recordset.length === 0) {
             return res.status(401).json({ error: 'Invalid credentials' });
@@ -82,12 +78,10 @@ const loginUser = async (req, res) => {
 
         const user = result.recordset[0];
 
-        // Check if the user has a password_hash set up (in case of old data without passwords, we might need a reset mechanism)
         if (!user.password_hash) {
             return res.status(401).json({ error: 'Please contact admin to set up your password.' });
         }
 
-        // Check password
         const isMatch = await bcrypt.compare(password, user.password_hash);
 
         if (isMatch) {
@@ -107,7 +101,19 @@ const loginUser = async (req, res) => {
     }
 };
 
-module.exports = {
-    registerUser,
-    loginUser
+// GET /api/auth/me  — requires protect middleware
+const getMe = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('id', sql.Int, req.user.id)
+            .query('SELECT user_id, roll_number, full_name, email, phone, role FROM Users WHERE user_id = @id');
+
+        if (!result.recordset.length) return res.status(404).json({ error: 'User not found' });
+        res.json(result.recordset[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 };
+
+module.exports = { registerUser, loginUser, getMe };
