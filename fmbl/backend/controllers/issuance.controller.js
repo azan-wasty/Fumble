@@ -5,6 +5,8 @@ const getAllIssuances = async (req, res) => {
     try {
         const pool = await poolPromise;
         const { status } = req.query;
+
+        const request = pool.request();
         let query = `
             SELECT ii.issuance_id, u.full_name, u.roll_number,
                    si.item_name, ii.quantity,
@@ -12,9 +14,14 @@ const getAllIssuances = async (req, res) => {
             FROM Item_Issuance ii
             JOIN Users        u  ON ii.user_id = u.user_id
             JOIN Sports_Items si ON ii.item_id = si.item_id`;
-        if (status) query += ` WHERE ii.status = '${status}'`;
+
+        if (status) {
+            request.input('status', sql.VarChar, status);
+            query += ' WHERE ii.status = @status';
+        }
         query += ' ORDER BY ii.due_date';
-        const result = await pool.request().query(query);
+
+        const result = await request.query(query);
         res.json(result.recordset);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -44,18 +51,38 @@ const issueItem = async (req, res) => {
     const { user_id, item_id, quantity, due_date } = req.body;
     if (!user_id || !item_id || !due_date)
         return res.status(400).json({ error: 'user_id, item_id, and due_date are required' });
+
+    const qty = quantity || 1;
+
     try {
         const pool = await poolPromise;
+
+        // Guard: check available stock before issuing
+        const stockCheck = await pool.request()
+            .input('item_id', sql.Int, item_id)
+            .query('SELECT available_qty, item_name FROM Sports_Items WHERE item_id = @item_id');
+
+        if (!stockCheck.recordset.length) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+
+        const { available_qty, item_name } = stockCheck.recordset[0];
+        if (available_qty < qty) {
+            return res.status(409).json({
+                error: `Insufficient stock. Requested: ${qty}, Available: ${available_qty} (${item_name})`
+            });
+        }
+
         // Decrease available_qty
         await pool.request()
-            .input('qty', sql.Int, quantity || 1)
+            .input('qty', sql.Int, qty)
             .input('item_id', sql.Int, item_id)
             .query('UPDATE Sports_Items SET available_qty = available_qty - @qty WHERE item_id = @item_id');
 
         const result = await pool.request()
             .input('user_id', sql.Int, user_id)
             .input('item_id', sql.Int, item_id)
-            .input('quantity', sql.Int, quantity || 1)
+            .input('quantity', sql.Int, qty)
             .input('due_date', sql.Date, due_date)
             .query(`INSERT INTO Item_Issuance (user_id, item_id, quantity, due_date)
                     OUTPUT INSERTED.*
@@ -70,7 +97,6 @@ const issueItem = async (req, res) => {
 const returnItem = async (req, res) => {
     try {
         const pool = await poolPromise;
-        // Fetch issuance first
         const fetch = await pool.request()
             .input('id', sql.Int, req.params.id)
             .query('SELECT * FROM Item_Issuance WHERE issuance_id = @id');

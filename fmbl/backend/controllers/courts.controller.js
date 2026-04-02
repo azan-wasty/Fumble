@@ -5,6 +5,8 @@ const getAllBookings = async (req, res) => {
     try {
         const pool = await poolPromise;
         const { status } = req.query;
+
+        const request = pool.request();
         let query = `
             SELECT cr.booking_id, u.full_name, u.roll_number,
                    v.venue_name, s.sport_name,
@@ -13,9 +15,14 @@ const getAllBookings = async (req, res) => {
             JOIN Users  u ON cr.user_id  = u.user_id
             JOIN Venues v ON cr.venue_id = v.venue_id
             JOIN Sports s ON v.sport_id  = s.sport_id`;
-        if (status) query += ` WHERE cr.status = '${status}'`;
+
+        if (status) {
+            request.input('status', sql.VarChar, status);
+            query += ' WHERE cr.status = @status';
+        }
         query += ' ORDER BY cr.booking_date, cr.start_time';
-        const result = await pool.request().query(query);
+
+        const result = await request.query(query);
         res.json(result.recordset);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -45,8 +52,27 @@ const createBooking = async (req, res) => {
     const { user_id, venue_id, booking_date, start_time, end_time } = req.body;
     if (!user_id || !venue_id || !booking_date || !start_time || !end_time)
         return res.status(400).json({ error: 'user_id, venue_id, booking_date, start_time, end_time required' });
+
     try {
         const pool = await poolPromise;
+
+        // Check for time-slot conflict (exclude cancelled bookings)
+        const conflict = await pool.request()
+            .input('venue_id', sql.Int, venue_id)
+            .input('booking_date', sql.Date, booking_date)
+            .input('start_time', sql.VarChar, start_time)
+            .input('end_time', sql.VarChar, end_time)
+            .query(`SELECT booking_id FROM Court_Registrations
+                    WHERE venue_id     = @venue_id
+                      AND booking_date = @booking_date
+                      AND status      <> 'cancelled'
+                      AND start_time  <  @end_time
+                      AND end_time    >  @start_time`);
+
+        if (conflict.recordset.length > 0) {
+            return res.status(409).json({ error: 'Venue is already booked for this time slot' });
+        }
+
         const result = await pool.request()
             .input('user_id', sql.Int, user_id)
             .input('venue_id', sql.Int, venue_id)

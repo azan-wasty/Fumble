@@ -1,10 +1,13 @@
 const { sql, poolPromise } = require('../config/db');
 
+// Columns to select — never expose password_hash
+const SAFE_COLS = 'user_id, roll_number, full_name, email, phone, role, created_at';
+
 // GET /api/users
 const getAllUsers = async (req, res) => {
     try {
         const pool = await poolPromise;
-        const result = await pool.request().query('SELECT * FROM Users');
+        const result = await pool.request().query(`SELECT ${SAFE_COLS} FROM Users`);
         res.json(result.recordset);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -17,7 +20,7 @@ const getUserById = async (req, res) => {
         const pool = await poolPromise;
         const result = await pool.request()
             .input('id', sql.Int, req.params.id)
-            .query('SELECT * FROM Users WHERE user_id = @id');
+            .query(`SELECT ${SAFE_COLS} FROM Users WHERE user_id = @id`);
         if (!result.recordset.length) return res.status(404).json({ error: 'User not found' });
         res.json(result.recordset[0]);
     } catch (err) {
@@ -25,7 +28,7 @@ const getUserById = async (req, res) => {
     }
 };
 
-// POST /api/users
+// POST /api/users  (admin only — no password, use /auth/register for self-registration)
 const createUser = async (req, res) => {
     const { roll_number, full_name, email, phone, role } = req.body;
     if (!full_name) return res.status(400).json({ error: 'full_name is required' });
@@ -38,7 +41,8 @@ const createUser = async (req, res) => {
             .input('phone', sql.VarChar, phone)
             .input('role', sql.VarChar, role || 'student')
             .query(`INSERT INTO Users (roll_number, full_name, email, phone, role)
-                    OUTPUT INSERTED.*
+                    OUTPUT INSERTED.user_id, INSERTED.roll_number, INSERTED.full_name,
+                           INSERTED.email, INSERTED.phone, INSERTED.role
                     VALUES (@roll_number, @full_name, @email, @phone, @role)`);
         res.status(201).json(result.recordset[0]);
     } catch (err) {
@@ -62,7 +66,8 @@ const updateUser = async (req, res) => {
                         email     = ISNULL(@email, email),
                         phone     = ISNULL(@phone, phone),
                         role      = ISNULL(@role, role)
-                    OUTPUT INSERTED.*
+                    OUTPUT INSERTED.user_id, INSERTED.roll_number, INSERTED.full_name,
+                           INSERTED.email, INSERTED.phone, INSERTED.role
                     WHERE user_id = @id`);
         if (!result.recordset.length) return res.status(404).json({ error: 'User not found' });
         res.json(result.recordset[0]);

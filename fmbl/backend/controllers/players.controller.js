@@ -5,6 +5,8 @@ const getAllPlayers = async (req, res) => {
     try {
         const pool = await poolPromise;
         const { sport_id, available } = req.query;
+
+        const request = pool.request();
         let query = `
             SELECT pp.profile_id, u.full_name, u.roll_number, u.email,
                    s.sport_name, pp.skill_level, pp.position, pp.is_available, pp.bio
@@ -12,9 +14,16 @@ const getAllPlayers = async (req, res) => {
             JOIN Users  u ON pp.user_id  = u.user_id
             JOIN Sports s ON pp.sport_id = s.sport_id
             WHERE 1=1`;
-        if (sport_id) query += ` AND pp.sport_id = ${parseInt(sport_id)}`;
-        if (available === 'true') query += ` AND pp.is_available = 1`;
-        const result = await pool.request().query(query);
+
+        if (sport_id) {
+            request.input('sport_id', sql.Int, parseInt(sport_id));
+            query += ' AND pp.sport_id = @sport_id';
+        }
+        if (available === 'true') {
+            query += ' AND pp.is_available = 1';
+        }
+
+        const result = await request.query(query);
         res.json(result.recordset);
     } catch (err) {
         res.status(500).json({ error: err.message });

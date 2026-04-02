@@ -1,78 +1,148 @@
 const { sql, poolPromise } = require('../config/db');
 
-const getAllSports = async (req, res) => {
+// GET /api/teams  — optional ?sport_id=1
+const getAllTeams = async (req, res) => {
     try {
         const pool = await poolPromise;
-        const result = await pool.request().query('SELECT * FROM Sports');
+        const { sport_id } = req.query;
+
+        const request = pool.request();
+        let query = `
+            SELECT t.team_id, t.team_name, s.sport_name,
+                   u.full_name AS captain_name, u.roll_number AS captain_roll, t.created_at
+            FROM Teams t
+            JOIN Sports s ON t.sport_id   = s.sport_id
+            JOIN Users  u ON t.captain_id = u.user_id`;
+
+        if (sport_id) {
+            request.input('sport_id', sql.Int, parseInt(sport_id));
+            query += ' WHERE t.sport_id = @sport_id';
+        }
+
+        const result = await request.query(query);
         res.json(result.recordset);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-const getSportById = async (req, res) => {
+// GET /api/teams/:id
+const getTeamById = async (req, res) => {
     try {
         const pool = await poolPromise;
-        const result = await pool.request()
+        const team = await pool.request()
             .input('id', sql.Int, req.params.id)
-            .query('SELECT * FROM Sports WHERE sport_id = @id');
-        if (!result.recordset.length) return res.status(404).json({ error: 'Sport not found' });
-        res.json(result.recordset[0]);
+            .query(`SELECT t.*, s.sport_name, u.full_name AS captain_name
+                    FROM Teams t
+                    JOIN Sports s ON t.sport_id   = s.sport_id
+                    JOIN Users  u ON t.captain_id = u.user_id
+                    WHERE t.team_id = @id`);
+        if (!team.recordset.length) return res.status(404).json({ error: 'Team not found' });
+
+        const members = await pool.request()
+            .input('id', sql.Int, req.params.id)
+            .query(`SELECT u.user_id, u.full_name, u.roll_number
+                    FROM Team_Members tm
+                    JOIN Users u ON tm.user_id = u.user_id
+                    WHERE tm.team_id = @id`);
+
+        res.json({ ...team.recordset[0], members: members.recordset });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-const createSport = async (req, res) => {
-    const { sport_name, max_team_size, min_team_size } = req.body;
-    if (!sport_name || !max_team_size || !min_team_size)
-        return res.status(400).json({ error: 'sport_name, max_team_size, and min_team_size are required' });
+// POST /api/teams
+const createTeam = async (req, res) => {
+    const { team_name, sport_id, captain_id } = req.body;
+    if (!team_name || !sport_id || !captain_id)
+        return res.status(400).json({ error: 'team_name, sport_id, and captain_id are required' });
     try {
         const pool = await poolPromise;
         const result = await pool.request()
-            .input('sport_name', sql.VarChar, sport_name)
-            .input('max_team_size', sql.Int, max_team_size)
-            .input('min_team_size', sql.Int, min_team_size)
-            .query(`INSERT INTO Sports (sport_name, max_team_size, min_team_size)
+            .input('team_name', sql.VarChar, team_name)
+            .input('sport_id', sql.Int, sport_id)
+            .input('captain_id', sql.Int, captain_id)
+            .query(`INSERT INTO Teams (team_name, sport_id, captain_id)
                     OUTPUT INSERTED.*
-                    VALUES (@sport_name, @max_team_size, @min_team_size)`);
+                    VALUES (@team_name, @sport_id, @captain_id)`);
+
+        // Auto-add captain as member
+        await pool.request()
+            .input('team_id', sql.Int, result.recordset[0].team_id)
+            .input('user_id', sql.Int, captain_id)
+            .query('INSERT INTO Team_Members (team_id, user_id) VALUES (@team_id, @user_id)');
+
         res.status(201).json(result.recordset[0]);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-const updateSport = async (req, res) => {
-    const { max_team_size, min_team_size } = req.body;
+// POST /api/teams/:id/members
+const addMember = async (req, res) => {
+    const { user_id } = req.body;
+    if (!user_id) return res.status(400).json({ error: 'user_id required' });
     try {
         const pool = await poolPromise;
         const result = await pool.request()
-            .input('id', sql.Int, req.params.id)
-            .input('max_team_size', sql.Int, max_team_size)
-            .input('min_team_size', sql.Int, min_team_size)
-            .query(`UPDATE Sports SET
-                        max_team_size = ISNULL(@max_team_size, max_team_size),
-                        min_team_size = ISNULL(@min_team_size, min_team_size)
+            .input('team_id', sql.Int, req.params.id)
+            .input('user_id', sql.Int, user_id)
+            .query(`INSERT INTO Team_Members (team_id, user_id)
                     OUTPUT INSERTED.*
-                    WHERE sport_id = @id`);
-        if (!result.recordset.length) return res.status(404).json({ error: 'Sport not found' });
-        res.json(result.recordset[0]);
+                    VALUES (@team_id, @user_id)`);
+        res.status(201).json(result.recordset[0]);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-const deleteSport = async (req, res) => {
+// DELETE /api/teams/:id/members/:userId
+const removeMember = async (req, res) => {
     try {
         const pool = await poolPromise;
         const result = await pool.request()
-            .input('id', sql.Int, req.params.id)
-            .query('DELETE FROM Sports OUTPUT DELETED.sport_id WHERE sport_id = @id');
-        if (!result.recordset.length) return res.status(404).json({ error: 'Sport not found' });
-        res.json({ message: 'Sport deleted' });
+            .input('team_id', sql.Int, req.params.id)
+            .input('user_id', sql.Int, req.params.userId)
+            .query(`DELETE FROM Team_Members OUTPUT DELETED.member_id
+                    WHERE team_id = @team_id AND user_id = @user_id`);
+        if (!result.recordset.length) return res.status(404).json({ error: 'Member not found in team' });
+        res.json({ message: 'Member removed' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-module.exports = { getAllSports, getSportById, createSport, updateSport, deleteSport };
+// DELETE /api/teams/:id
+const deleteTeam = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        await pool.request().input('id', sql.Int, req.params.id)
+            .query('DELETE FROM Team_Members WHERE team_id = @id');
+        const result = await pool.request().input('id', sql.Int, req.params.id)
+            .query('DELETE FROM Teams OUTPUT DELETED.team_id WHERE team_id = @id');
+        if (!result.recordset.length) return res.status(404).json({ error: 'Team not found' });
+        res.json({ message: 'Team deleted' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// GET /api/teams/opponents/:sport_id/:team_id
+const getOpponents = async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request()
+            .input('sport_id', sql.Int, req.params.sport_id)
+            .input('team_id', sql.Int, req.params.team_id)
+            .query(`SELECT t.team_id, t.team_name, u.full_name AS captain_name
+                    FROM Teams t
+                    JOIN Users u ON t.captain_id = u.user_id
+                    WHERE t.sport_id = @sport_id AND t.team_id <> @team_id`);
+        res.json(result.recordset);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+module.exports = { getAllTeams, getTeamById, createTeam, addMember, removeMember, deleteTeam, getOpponents };
