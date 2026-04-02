@@ -7,6 +7,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/sports', require('./routes/sports'));
 app.use('/api/venues', require('./routes/venues'));
@@ -19,6 +20,9 @@ app.use('/api/matches', require('./routes/matches'));
 app.use('/api/players', require('./routes/players'));
 
 app.get('/', (req, res) => res.json({ message: 'Fumble API running' }));
+
+// Global error handler — must be last
+app.use(require('./middleware/error.middleware'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

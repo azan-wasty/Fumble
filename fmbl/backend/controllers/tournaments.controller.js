@@ -5,6 +5,8 @@ const getAllTournaments = async (req, res) => {
     try {
         const pool = await poolPromise;
         const { status } = req.query;
+
+        const request = pool.request();
         let query = `
             SELECT t.tournament_id, t.name, s.sport_name,
                    u.full_name AS organizer_name, v.venue_name,
@@ -13,8 +15,13 @@ const getAllTournaments = async (req, res) => {
             JOIN Sports s ON t.sport_id     = s.sport_id
             JOIN Users  u ON t.organizer_id = u.user_id
             LEFT JOIN Venues v ON t.venue_id = v.venue_id`;
-        if (status) query += ` WHERE t.status = '${status}'`;
-        const result = await pool.request().query(query);
+
+        if (status) {
+            request.input('status', sql.VarChar, status);
+            query += ' WHERE t.status = @status';
+        }
+
+        const result = await request.query(query);
         res.json(result.recordset);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -91,7 +98,7 @@ const updateTournamentStatus = async (req, res) => {
     }
 };
 
-// POST /api/tournaments/:id/register  — register a team
+// POST /api/tournaments/:id/register
 const registerTeam = async (req, res) => {
     const { team_id } = req.body;
     if (!team_id) return res.status(400).json({ error: 'team_id required' });
