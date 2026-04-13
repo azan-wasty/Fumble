@@ -424,15 +424,16 @@ WHERE tournament_id = 2 AND team_id = 4;
 
 
 
---Users — linked to Court_Registrations, Item_Issuance, Teams, Tournaments, Player_Profiles
---Sports — linked to Venues, Sports_Items, Teams, Tournaments, Player_Profiles
+--Users ï¿½ linked to Court_Registrations, Item_Issuance, Teams, Tournaments, Player_Profiles
+--Sports ï¿½ linked to Venues, Sports_Items, Teams, Tournaments, Player_Profiles
 --Venues - linked to Court_Registrations, Tournaments
---Court_Registrations — linked to Users, Venues
---Sports_Items — linked to Item_Issuance
---Item_Issuance — linked to Users, Sports_Items
---Teams — linked to Team_Members, Tournament_Registrations, Matches, Tournaments
---Team_Members — linked to Teams, Users
---Tournaments — linked to Sports, Users, Venues, Tournament_Registrations, Matches
---Tournament_Registrations — linked to Tournaments, Teams
---Matches — linked to Tournaments, Teams (×3 — team_a, team_b, winner)
---Player_Profiles — linked to Users, Sports
+--Court_Registrations ï¿½ linked to Users, Venues
+--Sports_Items ï¿½ linked to Item_Issuance
+--Item_Issuance ï¿½ linked to Users, Sports_Items
+--Teams ï¿½ linked to Team_Members, Tournament_Registrations, Matches, Tournaments
+--Team_Members ï¿½ linked to Teams, Users
+--Tournaments ï¿½ linked to Sports, Users, Venues, Tournament_Registrations, Matches
+--Tournament_Registrations ï¿½ linked to Tournaments, Teams
+--Matches ï¿½ linked to Tournaments, Teams (ï¿½3 ï¿½ team_a, team_b, winner)
+--Player_Profiles ï¿½ linked to Users, Sports
+ALTER TABLE Users ADD password_hash VARCHAR(255);
