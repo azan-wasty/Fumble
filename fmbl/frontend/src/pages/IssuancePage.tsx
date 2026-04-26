@@ -76,7 +76,7 @@ export default function IssuancePage() {
   }
 
   const fmtDate = (d: string | null) =>
-    d ? new Date(d).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
+    d ? new Date(d).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'
 
   const isOverdue = (due: string, status: string) =>
     status !== 'returned' && new Date(due) < new Date()

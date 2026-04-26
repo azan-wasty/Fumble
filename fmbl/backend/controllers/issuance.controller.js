@@ -1,6 +1,6 @@
 const { sql, poolPromise } = require('../config/db');
 
-// GET /api/issuance  — optional ?status=issued|overdue|returned
+// GET /api/issuance - optional ?status=issued|overdue|returned
 const getAllIssuances = async (req, res) => {
     try {
         const pool = await poolPromise;
@@ -46,7 +46,7 @@ const getIssuanceById = async (req, res) => {
     }
 };
 
-// POST /api/issuance  — issue an item
+// POST /api/issuance - issue an item
 const issueItem = async (req, res) => {
     const { user_id, item_id, quantity, due_date } = req.body;
     if (!user_id || !item_id || !due_date)
@@ -57,7 +57,7 @@ const issueItem = async (req, res) => {
     try {
         const pool = await poolPromise;
 
-        // Guard: check available stock before issuing
+        // check available stock
         const stockCheck = await pool.request()
             .input('item_id', sql.Int, item_id)
             .query('SELECT available_qty, item_name FROM Sports_Items WHERE item_id = @item_id');
@@ -93,7 +93,7 @@ const issueItem = async (req, res) => {
     }
 };
 
-// PATCH /api/issuance/:id/return  — return an item
+// PATCH /api/issuance/:id/return - return an item
 const returnItem = async (req, res) => {
     try {
         const pool = await poolPromise;

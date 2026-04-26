@@ -1,6 +1,6 @@
 const { sql, poolPromise } = require('../config/db');
 
-// GET /api/players  — optional ?sport_id=1&available=true
+// GET /api/players - optional ?sport_id=1&available=true
 const getAllPlayers = async (req, res) => {
     try {
         const pool = await poolPromise;

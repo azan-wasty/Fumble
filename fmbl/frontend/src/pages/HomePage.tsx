@@ -111,7 +111,7 @@ export default function HomePage() {
               <Calendar size={28} color="#388e3c" />
             </div>
             <h3>Match Schedule</h3>
-            <p>View upcoming matches, scores, and standings — all in real time.</p>
+            <p>View upcoming matches, scores, and standings - all in real time.</p>
           </div>
           <div className="feature-card card">
             <div className="feature-icon">
@@ -139,7 +139,7 @@ export default function HomePage() {
       )}
 
       <footer className="home-footer">
-        <p>© 2025 Fumble — FAST-NUCES Sports Platform</p>
+        <p>© 2026 Fumble | FAST-NUCES Sports Platform</p>
       </footer>
     </div>
   )

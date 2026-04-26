@@ -1,6 +1,6 @@
 const { sql, poolPromise } = require('../config/db');
 
-// GET /api/courts  — optional ?status=confirmed
+// GET /api/courts - optional ?status=confirmed
 const getAllBookings = async (req, res) => {
     try {
         const pool = await poolPromise;
@@ -56,7 +56,7 @@ const createBooking = async (req, res) => {
     try {
         const pool = await poolPromise;
 
-        // Check for time-slot conflict (exclude cancelled bookings)
+        // Check for time-slot conflict
         const conflict = await pool.request()
             .input('venue_id', sql.Int, venue_id)
             .input('booking_date', sql.Date, booking_date)

@@ -162,7 +162,7 @@ export default function MatchesPage() {
                   <td className="fw-600">{m.team_b}</td>
                   <td className="text-sm">{fmtDate(m.match_date)}</td>
                   <td className="text-sm text-muted">{m.match_time}</td>
-                  <td>{m.winner ? <span className="fw-600 text-primary">{m.winner}</span> : <span className="text-muted">—</span>}</td>
+                  <td>{m.winner ? <span className="fw-600 text-primary">{m.winner}</span> : <span className="text-muted">N/A</span>}</td>
                   <td><StatusBadge status={m.status} /></td>
                 </tr>
               ))}

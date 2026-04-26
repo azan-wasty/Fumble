@@ -106,7 +106,7 @@ const loginUser = async (req, res) => {
     }
 };
 
-// GET /api/auth/me  — requires protect middleware
+// GET /api/auth/me - requires protect middleware
 const getMe = async (req, res) => {
     try {
         const pool = await poolPromise;
