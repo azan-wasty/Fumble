@@ -11,11 +11,9 @@ import MatchesPage from './pages/MatchesPage'
 import PlayersPage from './pages/PlayersPage'
 import TeamsPage from './pages/TeamsPage'
 import CourtsPage from './pages/CourtsPage'
-import ItemsPage from './pages/ItemsPage'
 import IssuancePage from './pages/IssuancePage'
-import VenuesPage from './pages/VenuesPage'
-import SportsPage from './pages/SportsPage'
 import UsersPage from './pages/UsersPage'
+import ResourcesPage from './pages/ResourcesPage'
 
 
 export default function App() {
@@ -33,10 +31,11 @@ export default function App() {
           <Route path="/players" element={<ProtectedRoute><PlayersPage /></ProtectedRoute>} />
           <Route path="/teams" element={<ProtectedRoute><TeamsPage /></ProtectedRoute>} />
           <Route path="/courts" element={<ProtectedRoute><CourtsPage /></ProtectedRoute>} />
-          <Route path="/items" element={<ProtectedRoute><ItemsPage /></ProtectedRoute>} />
+          <Route path="/resources" element={<ProtectedRoute><ResourcesPage /></ProtectedRoute>} />
+          <Route path="/items" element={<Navigate to="/resources" replace />} />
           <Route path="/issuance" element={<ProtectedRoute><IssuancePage /></ProtectedRoute>} />
-          <Route path="/venues" element={<ProtectedRoute><VenuesPage /></ProtectedRoute>} />
-          <Route path="/sports" element={<ProtectedRoute><SportsPage /></ProtectedRoute>} />
+          <Route path="/venues" element={<Navigate to="/resources" replace />} />
+          <Route path="/sports" element={<Navigate to="/resources" replace />} />
           <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />

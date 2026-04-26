@@ -11,9 +11,7 @@ const NAV_LINKS = [
   { to: '/players', label: 'Players' },
   { to: '/teams', label: 'Teams' },
   { to: '/courts', label: 'Courts' },
-  { to: '/venues', label: 'Venues' },
-  { to: '/sports', label: 'Sports' },
-  { to: '/items', label: 'Equipment' },
+  { to: '/resources', label: 'Resources' },
   { to: '/issuance', label: 'Issuance' },
 ]
 

@@ -121,9 +121,16 @@ export interface Issuance {
   issuance_id: number; full_name: string; roll_number: string; item_name: string
   quantity: number; issued_at: string; due_date: string; returned_at: string | null; status: string
 }
+export interface CreateIssuancePayload {
+  user_id: number
+  item_id: number
+  quantity: number
+  due_date: string
+}
 export const issuanceApi = {
   list: (status?: string) => api.get<Issuance[]>('/api/issuance', { params: status ? { status } : {} }).then(r => r.data),
   get: (id: number) => api.get<Issuance>(`/api/issuance/${id}`).then(r => r.data),
+  create: (data: CreateIssuancePayload) => api.post<Issuance>('/api/issuance', data).then(r => r.data),
   return: (id: number) => api.patch(`/api/issuance/${id}/return`, {}).then(r => r.data),
 }
 

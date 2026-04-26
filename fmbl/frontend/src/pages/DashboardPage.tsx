@@ -48,7 +48,7 @@ export default function DashboardPage() {
     { label: 'Players',     value: players.length,     icon: <User size={20} />,     color: '#2e7d32', bg: '#e8f5e9', to: '/players' },
     { label: 'Teams',       value: teams.length,       icon: <Users size={20} />,    color: '#e65100', bg: '#fff3e0', to: '/teams' },
     { label: 'Bookings',    value: bookings.length,    icon: <MapPin size={20} />,   color: '#6a1b9a', bg: '#f3e5f5', to: '/courts' },
-    { label: 'Equipment',   value: items.length,       icon: <Package size={20} />,  color: '#00695c', bg: '#e0f2f1', to: '/items' },
+    { label: 'Equipment',   value: items.length,       icon: <Package size={20} />,  color: '#00695c', bg: '#e0f2f1', to: '/resources' },
     { label: 'Issuances',   value: issuances.length,   icon: <ClipboardList size={20} />, color: '#f57f17', bg: '#fffde7', to: '/issuance' },
   ]
 
@@ -61,7 +61,7 @@ export default function DashboardPage() {
           <div className="dash-banner-blob" />
           <div>
             <p className="dash-banner-greeting">Good {greeting()},</p>
-            <h1 className="dash-banner-name">{user?.full_name} 👋</h1>
+            <h1 className="dash-banner-name">{user?.full_name}</h1>
             <p className="dash-banner-meta">{user?.roll_number} · <span className="dash-role-tag">{user?.role}</span></p>
           </div>
           <div className="dash-banner-icon"><TrendingUp size={48} strokeWidth={1.2} /></div>
@@ -96,7 +96,7 @@ export default function DashboardPage() {
                   </Link>
                 )}
                 {lowStockItems.length > 0 && (
-                  <Link to="/items" className="dash-alert dash-alert-yellow">
+                  <Link to="/resources" className="dash-alert dash-alert-yellow">
                     <Package size={16} />
                     <span><strong>{lowStockItems.length}</strong> item{lowStockItems.length !== 1 ? 's' : ''} low or out of stock</span>
                     <ChevronRight size={14} style={{ marginLeft: 'auto' }} />
