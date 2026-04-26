@@ -1,6 +1,6 @@
 const { sql, poolPromise } = require('../config/db');
 
-// GET /api/tournaments  — optional ?status=approved
+// GET /api/tournaments - optional ?status=approved
 const getAllTournaments = async (req, res) => {
     try {
         const pool = await poolPromise;
@@ -28,7 +28,7 @@ const getAllTournaments = async (req, res) => {
     }
 };
 
-// GET /api/tournaments/:id  — includes registered teams
+// GET /api/tournaments/:id - includes registered teams
 const getTournamentById = async (req, res) => {
     try {
         const pool = await poolPromise;

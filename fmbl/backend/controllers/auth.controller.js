@@ -11,9 +11,14 @@ const generateToken = (id, role) => {
 // POST /api/auth/register
 const registerUser = async (req, res) => {
     const { roll_number, full_name, email, phone, role, password } = req.body;
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const nuEmailRegex = /^[^\s@]+@[^\s@]+\.nu\.edu\.pk$/i;
 
-    if (!roll_number || !full_name || !email || !password) {
+    if (!roll_number || !full_name || !normalizedEmail || !password) {
         return res.status(400).json({ error: 'Please provide all required fields (roll_number, full_name, email, password)' });
+    }
+    if (!nuEmailRegex.test(normalizedEmail)) {
+        return res.status(400).json({ error: 'Only emails matching *@*.nu.edu.pk are allowed' });
     }
 
     try {
@@ -21,7 +26,7 @@ const registerUser = async (req, res) => {
 
         const userExists = await pool.request()
             .input('roll_number', sql.VarChar, roll_number)
-            .input('email', sql.VarChar, email)
+            .input('email', sql.VarChar, normalizedEmail)
             .query('SELECT user_id FROM Users WHERE roll_number = @roll_number OR email = @email');
 
         if (userExists.recordset.length > 0) {
@@ -34,7 +39,7 @@ const registerUser = async (req, res) => {
         const result = await pool.request()
             .input('roll_number', sql.VarChar, roll_number)
             .input('full_name', sql.VarChar, full_name)
-            .input('email', sql.VarChar, email)
+            .input('email', sql.VarChar, normalizedEmail)
             .input('phone', sql.VarChar, phone || null)
             .input('role', sql.VarChar, role || 'student')
             .input('password_hash', sql.VarChar, hashedPassword)
@@ -101,7 +106,7 @@ const loginUser = async (req, res) => {
     }
 };
 
-// GET /api/auth/me  — requires protect middleware
+// GET /api/auth/me - requires protect middleware
 const getMe = async (req, res) => {
     try {
         const pool = await poolPromise;

@@ -1,6 +1,6 @@
 const { sql, poolPromise } = require('../config/db');
 
-// GET /api/teams  — optional ?sport_id=1
+// GET /api/teams - optional ?sport_id=1
 const getAllTeams = async (req, res) => {
     try {
         const pool = await poolPromise;
@@ -72,7 +72,7 @@ const createTeam = async (req, res) => {
     }
 };
 
-// POST /api/teams/:id/members  — add a member
+// POST /api/teams/:id/members - add a member
 const addMember = async (req, res) => {
     const { user_id } = req.body;
     if (!user_id) return res.status(400).json({ error: 'user_id required' });
@@ -90,7 +90,7 @@ const addMember = async (req, res) => {
     }
 };
 
-// DELETE /api/teams/:id/members/:userId  — remove a member
+// DELETE /api/teams/:id/members/:userId - remove a member
 const removeMember = async (req, res) => {
     try {
         const pool = await poolPromise;
@@ -121,7 +121,7 @@ const deleteTeam = async (req, res) => {
     }
 };
 
-// GET /api/teams/opponents/:sport_id/:team_id  — opponent search
+// GET /api/teams/opponents/:sport_id/:team_id - opponent search
 const getOpponents = async (req, res) => {
     try {
         const pool = await poolPromise;

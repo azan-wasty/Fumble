@@ -3,7 +3,6 @@ const { poolPromise } = require('./config/db');
 async function alterTable() {
   try {
     const pool = await poolPromise;
-    console.log("Checking if password_hash column exists");
     
     const result = await pool.request().query(`
       IF NOT EXISTS (
@@ -22,10 +21,8 @@ async function alterTable() {
       END
     `);
     
-    console.log("Alter table completed");
     process.exit(0);
   } catch (err) {
-    console.error("Error altering table", err);
     process.exit(1);
   }
 }

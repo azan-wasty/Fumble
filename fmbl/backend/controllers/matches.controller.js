@@ -61,7 +61,7 @@ const createMatch = async (req, res) => {
     }
 };
 
-// PATCH /api/matches/:id/result  — update winner and status
+// PATCH /api/matches/:id/result - update winner and status
 const updateMatchResult = async (req, res) => {
     const { winner_id, status } = req.body;
     const allowed = ['scheduled', 'ongoing', 'completed', 'cancelled'];

@@ -1,6 +1,6 @@
 const { sql, poolPromise } = require('../config/db');
 
-// Columns to select — never expose password_hash
+// Columns to select - never expose password_hash
 const SAFE_COLS = 'user_id, roll_number, full_name, email, phone, role, created_at';
 
 // GET /api/users
@@ -28,7 +28,7 @@ const getUserById = async (req, res) => {
     }
 };
 
-// POST /api/users  (admin only — no password, use /auth/register for self-registration)
+// POST /api/users  (admin only - no password)
 const createUser = async (req, res) => {
     const { roll_number, full_name, email, phone, role } = req.body;
     if (!full_name) return res.status(400).json({ error: 'full_name is required' });
