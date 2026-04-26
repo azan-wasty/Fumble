@@ -19,14 +19,21 @@ export default function SignupPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
+  const nuEmailRegex = /^[^\s@]+@[^\s@]+\.nu\.edu\.pk$/i
+
   useEffect(() => {
     if (isAuthenticated) navigate('/dashboard', { replace: true })
   }, [isAuthenticated, navigate])
 
   async function handleSignup(e: FormEvent) {
     e.preventDefault()
-    if (!rollNumber || !fullName || !email || !password) {
+    const normalizedEmail = email.trim().toLowerCase()
+    if (!rollNumber || !fullName || !normalizedEmail || !password) {
       setError('Please fill in all required fields.')
+      return
+    }
+    if (!nuEmailRegex.test(normalizedEmail)) {
+      setError('Only emails matching *@*.nu.edu.pk are allowed.')
       return
     }
     if (password !== confirmPassword) {
@@ -44,7 +51,7 @@ export default function SignupPage() {
       const data = await authApi.register({
         roll_number: rollNumber.trim(),
         full_name: fullName.trim(),
-        email: email.trim(),
+        email: normalizedEmail,
         phone: phone.trim() || undefined,
         password,
       })
@@ -118,9 +125,11 @@ export default function SignupPage() {
               id="s-email"
               className="form-input"
               type="email"
-              placeholder="you@example.com"
+              placeholder="you@lhr.nu.edu.pk"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              pattern="^[^\s@]+@[^\s@]+\.nu\.edu\.pk$"
+              title="Use an email like [rollnumber]@lhr.nu.edu.pk"
               required
             />
           </div>
