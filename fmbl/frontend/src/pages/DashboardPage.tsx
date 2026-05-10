@@ -215,7 +215,7 @@ export default function DashboardPage() {
                         const overdue = is.status !== 'returned' && new Date(is.due_date) < new Date()
                         return (
                           <tr key={is.issuance_id} className={overdue ? 'row-overdue' : ''}>
-                            <td className="fw-600">{is.full_name}</td>
+                            <td className="fw-600">{`${is.first_name} ${is.last_name}`}</td>
                             <td className="text-sm text-muted">{is.roll_number}</td>
                             <td>{is.item_name}</td>
                             <td>{is.quantity}</td>
